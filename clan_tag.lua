@@ -22,7 +22,6 @@ end
 local skeet_tag_name = "skeet.cc (Old)"
 
 local enabled_reference = ui.new_combobox("MISC", "Miscellaneous", "Clan tag spammer", {"Off", "gamesense", skeet_tag_name})
-local offset_reference = ui.new_slider("MISC", "Lua", "Clan tag offset", -1000, 1000, 0, true, "s", 1/100)
 local default_reference = ui.reference("MISC", "Miscellaneous", "Clan tag spammer")
 
 local clan_tag_prev = ""
@@ -34,7 +33,6 @@ local function on_enabled_changed()
 	local enabled = ui_get(enabled_reference)
 
 	ui_set(default_reference, enabled == "gamesense")
-	ui_set_visible(offset_reference, enabled == skeet_tag_name)
 end
 ui.set_callback(enabled_reference, on_enabled_changed)
 on_enabled_changed()
@@ -42,7 +40,7 @@ on_enabled_changed()
 local function gamesense_anim(text, indices)
 	local text_anim = "               " .. text .. "                      " 
 	local tickinterval = globals_tickinterval()
-	local tickcount = globals_tickcount() + time_to_ticks(client_latency()) + time_to_ticks(ui_get(offset_reference)/100)
+	local tickcount = globals_tickcount() + time_to_ticks(client_latency())
 	local i = tickcount / time_to_ticks(0.3)
 	i = math_floor(i % #indices)
 	i = indices[i+1]+1
