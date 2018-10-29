@@ -63,50 +63,35 @@ local function on_paint(ctx)
 			return
 		end
 
-		local game_rules_proxy = entity_get_all("CCSGameRulesProxy")[1]
-		if entity_get_prop(game_rules_proxy, "m_bBombPlanted") == 1 then
-			return
-		end
-
 		local plant_percentage = (globals_curtime() - started_at) / planting_time
 		if plant_percentage > 0 and 1 > plant_percentage then
+			local game_rules_proxy = entity_get_all("CCSGameRulesProxy")[1]
+			if entity_get_prop(game_rules_proxy, "m_bBombPlanted") == 1 then
+				return
+			end
+
 			local screen_width, screen_height = client_screen_size()
 			local remove_from_height = screen_height * (1 - plant_percentage)
+
+			local round_end_time = entity_get_prop(game_rules_proxy, "m_fRoundStartTime") + entity_get_prop(game_rules_proxy, "m_iRoundTime")
+			local has_time = (started_at + planting_time) < round_end_time
+
+			local r_bar, g_bar, b_bar, a_bar = 41, 180, 33, 200
+			local r_text, g_text, b_text, a_text = 255, 178, 0, 255
+
+			if not has_time then
+				r_bar, g_bar, b_bar = 255, 1, 1
+				r_text, g_text, b_text = 255, 1, 1
+			end
 
 			--background
 			client_draw_rectangle(ctx, 0, 0, 20, screen_height, 0, 0, 0, 196)
 			--precentage bar
-			client_draw_rectangle(ctx, 1, 0+remove_from_height, 18, screen_height-remove_from_height, 41, 180, 33, 255)
+			client_draw_rectangle(ctx, 1, 0+remove_from_height, 18, screen_height-remove_from_height, r_bar, g_bar, b_bar, a_bar)
+
+			client_draw_text(ctx, 5, 5, r_text, g_text, b_text, a_text, "+", 0, site, " - Planting")
+			client_draw_text(ctx, 5, 30, 255, 255, 255, 255, "+", 0, planter)
 		end
-
-		client_draw_text(ctx, 5, 5, 255, 178, 0, 255, "+", 0, site, " - Planting")
-		client_draw_text(ctx, 5, 30, 255, 255, 255, 255, "+", 0, planter)
-
-	--else
-		--local players = entity_get_players()
-		--for i=1, #players do
-		--	local player = players[i]
-		--	if entity_get_prop(player, "m_bIsGrabbingHostage") == 1 then
-				--client.log(entity_get_prop(player, "m_bHasDefuser"))
-		--	end
-		--end
-
-		--local hostages = entity_get_all("CHostageCarriableProp")
-
-		--for i=1, #hostages do
-		--	local hostage = hostages[i]
-		--	client.log(hostage)
-			--client.log(entity_get_prop(hostage, "m_nHostageState"))
-		--end
-
-
-		--local player_resource = entity_get_all("CCSPlayerResource")[1]
-
-		--local x = entity_get_prop(player_resource, "m_hostageRescueX")
-		--local y = entity_get_prop(player_resource, "m_hostageRescueY")
-		--local z = entity_get_prop(player_resource, "m_hostageRescueZ")
-
-		--client.log("setpos ", x, " ", y, " ", z)
 	end
 end
 client.set_event_callback("paint", on_paint)
