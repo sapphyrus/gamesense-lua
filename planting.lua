@@ -11,6 +11,7 @@ local table_maxn, table_foreach, table_sort, table_remove, table_foreachi, table
 local string_find, string_format, string_rep, string_gsub, string_len, string_gmatch, string_dump, string_match, string_reverse, string_byte, string_char, string_upper, string_lower, string_sub = string.find, string.format, string.rep, string.gsub, string.len, string.gmatch, string.dump, string.match, string.reverse, string.byte, string.char, string.upper, string.lower, string.sub 
 --end of local variables 
 
+local ignore_self = false
 local planting_time = 3.125
 local enable_reference = ui.reference("VISUALS", "Other ESP", "Bomb")
 
@@ -41,7 +42,12 @@ end
 
 local planter, site, started_at
 local function on_bomb_beginplant(e)
-	planter = entity_get_player_name(client_userid_to_entindex(e.userid))
+	local player = client_userid_to_entindex(e.userid)
+	if ignore_self and player == entity_get_local_player() then
+		return
+	end
+
+	planter = entity_get_player_name(player)
 	site = get_site_name(e.site)
 	started_at = globals_curtime()
 end
@@ -50,48 +56,57 @@ client.set_event_callback("bomb_beginplant", on_bomb_beginplant)
 local function reset(e)
 	planter = nil
 end
-
 client.set_event_callback("round_end", reset)
 client.set_event_callback("round_start", reset)
 client.set_event_callback("bomb_abortplant", reset)
 client.set_event_callback("bomb_planted", reset)
 
 local function on_paint(ctx)
-	if planter ~= nil then
+	if planter == nil then
+		return
+	end
 
-		if not ui_get(enable_reference) then
+	if not ui_get(enable_reference) then
+		return
+	end
+
+	local plant_percentage = (globals_curtime() - started_at) / planting_time
+	if plant_percentage > 0 and 1 > plant_percentage then
+		local game_rules_proxy = entity_get_all("CCSGameRulesProxy")[1]
+		if entity_get_prop(game_rules_proxy, "m_bBombPlanted") == 1 then
 			return
 		end
 
-		local plant_percentage = (globals_curtime() - started_at) / planting_time
-		if plant_percentage > 0 and 1 > plant_percentage then
-			local game_rules_proxy = entity_get_all("CCSGameRulesProxy")[1]
-			if entity_get_prop(game_rules_proxy, "m_bBombPlanted") == 1 then
-				return
+		local finished_at = (started_at + planting_time)
+
+		local screen_width, screen_height = client_screen_size()
+		local remove_from_height = screen_height * (1 - plant_percentage)
+
+		local round_end_time = entity_get_prop(game_rules_proxy, "m_fRoundStartTime") + entity_get_prop(game_rules_proxy, "m_iRoundTime")
+		local has_time = round_end_time > finished_at
+
+		if not has_time then
+			local restart_round_time = entity_get_prop(game_rules_proxy, "m_flRestartRoundTime")
+			if restart_round_time ~= 0 and restart_round_time > finished_at then
+				has_time = true
 			end
-
-			local screen_width, screen_height = client_screen_size()
-			local remove_from_height = screen_height * (1 - plant_percentage)
-
-			local round_end_time = entity_get_prop(game_rules_proxy, "m_fRoundStartTime") + entity_get_prop(game_rules_proxy, "m_iRoundTime")
-			local has_time = (started_at + planting_time) < round_end_time
-
-			local r_bar, g_bar, b_bar, a_bar = 41, 180, 33, 200
-			local r_text, g_text, b_text, a_text = 255, 178, 0, 255
-
-			if not has_time then
-				r_bar, g_bar, b_bar = 255, 1, 1
-				r_text, g_text, b_text = 255, 1, 1
-			end
-
-			--background
-			client_draw_rectangle(ctx, 0, 0, 20, screen_height, 0, 0, 0, 196)
-			--precentage bar
-			client_draw_rectangle(ctx, 1, 0+remove_from_height, 18, screen_height-remove_from_height, r_bar, g_bar, b_bar, a_bar)
-
-			client_draw_text(ctx, 5, 5, r_text, g_text, b_text, a_text, "+", 0, site, " - Planting")
-			client_draw_text(ctx, 5, 30, 255, 255, 255, 255, "+", 0, planter)
 		end
+
+		local r_bar, g_bar, b_bar, a_bar = 41, 180, 33, 200
+		local r_text, g_text, b_text, a_text = 255, 178, 0, 255
+
+		if not has_time then
+			r_bar, g_bar, b_bar = 255, 1, 1
+			r_text, g_text, b_text = 255, 1, 1
+		end
+
+		--background
+		client_draw_rectangle(ctx, 0, 0, 20, screen_height, 0, 0, 0, 196)
+		--precentage bar
+		client_draw_rectangle(ctx, 1, 0+remove_from_height, 18, screen_height-remove_from_height, r_bar, g_bar, b_bar, a_bar)
+
+		client_draw_text(ctx, 5, 5, r_text, g_text, b_text, a_text, "+", 0, site, " - Planting")
+		client_draw_text(ctx, 5, 30, 255, 255, 255, 255, "+", 0, planter)
 	end
 end
 client.set_event_callback("paint", on_paint)
