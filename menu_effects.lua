@@ -56,7 +56,7 @@ local lines_distance_reference = ui.new_slider("MISC", "Settings", "Line distanc
 local lines_color_reference = ui.new_color_picker("MISC", "Settings", "Line color", 100, 100, 100, 20)
 local lines_speed_reference = ui.new_slider("MISC", "Settings", "Line speed", 1, 30, 5)
 
-local gradient_distance_reference = ui.new_slider("MISC", "Settings", "Gradient distance", 1, 2048, 1700, true, "px")
+local gradient_distance_reference = ui.new_slider("MISC", "Settings", "Gradient distance", 1, 2048, 1400, true, "px")
 local gradient_color_reference = ui.new_color_picker("MISC", "Settings", "Gradient color", 16, 16, 16, 210)
 
 local dots_speed_reference = ui.new_slider("MISC", "Settings", "Dots speed", 1, 100, 20, true, "%")
@@ -95,8 +95,8 @@ local additional = 2
 local tr, tg, tb = 149, 213, 72
 
 local rainbow_progress = 0
-
 local lines_progress = 0
+local menu_open_prev = true
 
 local dots = {}
 local dot_size = 3
@@ -120,7 +120,7 @@ local function on_paint(ctx)
 
 	local opacity_multiplier = menu_open and 1 or 0
 
-	local menu_fade_time = 0.15
+	local menu_fade_time = 0.2
 
 	if realtime - last_change < menu_fade_time then
 		opacity_multiplier = (realtime - last_change) / menu_fade_time
