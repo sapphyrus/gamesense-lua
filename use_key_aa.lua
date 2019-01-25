@@ -1,5 +1,10 @@
+local entity_get_player_weapon, entity_get_local_player, entity_get_classname, entity_get_prop, entity_get_all, math_sqrt = entity.get_player_weapon, entity.get_local_player, entity.get_classname, entity.get_prop, entity.get_all, math.sqrt
 local use_blocked, use_released = false, false
 local chokedcommands_prev = 0
+
+local function distance3d(x1, y1, z1, x2, y2, z2)
+	return math_sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
+end
 
 client.set_event_callback("setup_command", function(cmd)
 	local in_use = cmd.in_use == 1
@@ -16,6 +21,29 @@ client.set_event_callback("setup_command", function(cmd)
 		return
 	end
 
+	--keep track of our previously choked commands to see if we're fakelagging
+	chokedcommands_prev = chokedcommands
+
+	--check if we're holding a c4
+	local local_player = entity_get_local_player()
+	local weapon = entity_get_classname(entity_get_player_weapon(local_player))
+	if weapon == "CC4" then
+		return
+	end
+
+	--check if we're close to a planted c4
+	local c4_entities = entity_get_all("CPlantedC4")
+	for i=1, #c4_entities do
+		if entity_get_prop(c4_entities[i], "m_bBombTicking") == 1 then
+			local lx, ly, lz = entity_get_prop(local_player, "m_vecOrigin")
+			local bx, by, bz = entity_get_prop(c4_entities[i], "m_vecOrigin")
+
+			if 100 > distance3d(lx, ly, lz, bx, by, bz) then
+				return
+			end
+		end
+	end
+
 	--checks if we're in_use for the first time and havent blocked a in_use yet
 	if use_released and not use_blocked then
 		use_blocked, use_released = true, false
@@ -28,6 +56,4 @@ client.set_event_callback("setup_command", function(cmd)
 		use_blocked = false
 	end
 
-	--keep track of our previously choked commands to see if we're fakelagging
-	chokedcommands_prev = chokedcommands
 end)
