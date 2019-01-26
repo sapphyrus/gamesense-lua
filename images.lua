@@ -60,10 +60,10 @@ function M.load(data)
 
 			--initialize image object
 			image.name = image_name
-			image.width = table.remove(image_data, 1)
-			image.height = table.remove(image_data, 1)
+			image.width = image_data[1]
+			image.height = image_data[2]
 
-			image.svg = image_data[1]
+			image.svg = image_data[3]
 			if header ~= nil and image.svg:sub(0, 5) ~= "<?xml" then
 				image.svg = header .. image.svg
 			end
