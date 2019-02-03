@@ -7,6 +7,8 @@ local image_mt = {
 	__index = image_class
 }
 
+local cache = {}
+
 function image_class:measure(width, height)
 	if width == nil and height == nil then
 		return self.width, self.height
@@ -28,12 +30,13 @@ function image_class:draw(x, y, width, height, r, g, b, a, force_same_res_render
 	local id = width .. "_" .. height
 	local texture = self.textures[id]
 	if texture == nil then
-		if #self.textures == 0 or force_same_res_render then
+		if ({next(self.textures)})[2] == nil or force_same_res_render then
 			texture = renderer_load_svg(self.svg, width, height)
 			if texture == nil then
 				self.textures[id] = -1
-				error("failed to load svg ", self.name, " for ", width, "x", height)
+				error("failed to load svg " .. self.name .. " for " .. width .. "x" .. height)
 			else
+				client.log("loaded svg ", self.name, " for ", width, "x", height)
 				self.textures[id] = texture
 			end
 		else
@@ -53,26 +56,34 @@ end
 
 function M.load(data)
 	local result = {}
-	local header = data[-1]
-	for image_name, image_data in pairs(data) do
-		if image_name ~= -1 then
-			local image = setmetatable({}, image_mt)
 
-			--initialize image object
-			image.name = image_name
-			image.width = image_data[1]
-			image.height = image_data[2]
+	if cache[data] == nil then
+		local header = data[-1]
+		for image_name, image_data in pairs(data) do
+			if image_name ~= -1 then
+				local image = setmetatable({}, image_mt)
 
-			image.svg = image_data[3]
-			if header ~= nil and image.svg:sub(0, 5) ~= "<?xml" then
-				image.svg = header .. image.svg
+				--initialize image object
+				image.name = image_name
+				image.width = image_data[1]
+				image.height = image_data[2]
+
+				image.svg = image_data[3]
+				if header ~= nil and image.svg:sub(0, 5) ~= "<?xml" then
+					image.svg = header .. image.svg
+				end
+
+				image.textures = {}
+
+				result[image_name] = image
 			end
-
-			image.textures = {}
-
-			result[image_name] = image
 		end
+
+		cache[data] = result
+	else
+		result = cache[data]
 	end
+
 	return result
 end
 
