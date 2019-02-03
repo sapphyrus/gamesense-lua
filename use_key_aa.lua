@@ -6,6 +6,19 @@ local function distance3d(x1, y1, z1, x2, y2, z2)
 	return math_sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
 end
 
+local function entities_close(lx, ly, lz, classname, bool_prop)
+	local entities = entity_get_all(classname)
+	for i=1, #entities do
+		if bool_prop == nil or entity_get_prop(entities[i], bool_prop) == 1 then
+			local x, y, z = entity_get_prop(entities[i], "m_vecOrigin")
+
+			if 100 > distance3d(lx, ly, lz, x, y, z) then
+				return true
+			end
+		end
+	end
+end
+
 client.set_event_callback("setup_command", function(cmd)
 	local in_use = cmd.in_use == 1
 	local chokedcommands = cmd.chokedcommands
@@ -31,17 +44,10 @@ client.set_event_callback("setup_command", function(cmd)
 		return
 	end
 
-	--check if we're close to a planted c4
-	local c4_entities = entity_get_all("CPlantedC4")
-	for i=1, #c4_entities do
-		if entity_get_prop(c4_entities[i], "m_bBombTicking") == 1 then
-			local lx, ly, lz = entity_get_prop(local_player, "m_vecOrigin")
-			local bx, by, bz = entity_get_prop(c4_entities[i], "m_vecOrigin")
-
-			if 100 > distance3d(lx, ly, lz, bx, by, bz) then
-				return
-			end
-		end
+	--check if we're close to a planted c4 or hostage
+	local lx, ly, lz = entity_get_prop(local_player, "m_vecOrigin")
+	if entities_close(lx, ly, lz, "CPlantedC4", "m_bBombTicking") or entities_close(lx, ly, lz, "CHostage") then
+		return
 	end
 
 	--checks if we're in_use for the first time and havent blocked a in_use yet
