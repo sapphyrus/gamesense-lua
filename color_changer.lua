@@ -143,7 +143,7 @@ local function task()
 end
 task()
 
-local function cleanup(proxy)
+local function on_shutdown()
 	local tone_map_controllers = entity_get_all("CEnvTonemapController")
 	for i=1, #tone_map_controllers do
 		local tone_map_controller = tone_map_controllers[i]
@@ -159,8 +159,4 @@ local function cleanup(proxy)
 	mat_ambient_light_b:set_raw_float(0)
 	r_modelAmbientMin:set_raw_float(0)
 end
-
-local proxy = newproxy(true)
-local proxy_mt = getmetatable(proxy)
-proxy_mt.__gc = cleanup
-return proxy
+client.set_event_callback("shutdown", on_shutdown)
