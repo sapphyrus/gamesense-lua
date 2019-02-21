@@ -52,15 +52,6 @@ local function draw_container(x, y, w, h, header)
 	end
 end
 
-local function contains(tbl, val)
-	for i=1,#tbl do
-		if tbl[i] == val then
-			return true
-		end
-	end
-	return false
-end
-
 local function table_contains(tbl, val)
 	for i=1, #tbl do
 		if tbl[i] == val then
@@ -188,8 +179,7 @@ end
 
 local function round(num, numDecimalPlaces)
 	local mult = 10^(numDecimalPlaces or 0)
-	if num >= 0 then return math.floor(num * mult + 0.5) / mult
-	else return math.ceil(num * mult - 0.5) / mult end
+	return math_floor(num * mult + 0.5) / mult
 end
 
 local widths = {
@@ -209,9 +199,9 @@ local function on_paint(ctx)
 		return
 	end
 
-	if contains(value, "Custom text") then
+	if table_contains(value, "Custom text") then
 		value = table_remove_element(value, "Custom text")
-		if contains(value, "Logo") then
+		if table_contains(value, "Logo") then
 			table_insert(value, 2, "Custom text")
 		else
 			table_insert(value, 1, "Custom text")
