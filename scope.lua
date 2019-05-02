@@ -18,6 +18,17 @@ local remove_spread_reference = ui.reference("RAGE", "Other", "Remove spread")
 local override_fov_reference = ui.reference("MISC", "Miscellaneous", "Override FOV")
 
 local remove_zoom_reference = ui.new_checkbox("VISUALS", "Effects", "Remove zoom")
+local first_zoom_reference = ui.new_slider("VISUALS", "Effects", "\nFirst level zoom", 0, 50, 0, true, "°", 1, {[0] = " "})
+local second_zoom_reference = ui.new_slider("VISUALS", "Effects", "\nSecond level zoom", 0, 80, 0, true, "°", 1, {[0] = " "})
+
+local function on_remove_zoom_changed()
+	local remove_zoom = ui_get(remove_zoom_reference)
+	ui_set_visible(first_zoom_reference, remove_zoom)
+	ui_set_visible(second_zoom_reference, remove_zoom)
+end
+ui.set_callback(remove_zoom_reference, on_remove_zoom_changed)
+on_remove_zoom_changed()
+
 local show_inaccuracy_reference = ui.new_checkbox("VISUALS", "Effects", "Scope overlay inaccuracy")
 ui.set_visible(show_inaccuracy_reference, false)
 
@@ -86,6 +97,12 @@ local function on_predict_command()
 			if scoped then
 				-- player is scoped normally
 				local fov = entity_get_prop(local_player, "m_iFOV")
+
+				if fov ~= nil and fov ~= 0 and fov ~= 90 then
+					local fov_extra = fov == 15 and ui_get(second_zoom_reference) or ui_get(first_zoom_reference)
+					fov = fov + fov_extra
+				end
+
 				entity_set_prop(local_player, "m_iDefaultFOV", fov == 0 and 90 or fov)
 				fov_changed = true
 				return
