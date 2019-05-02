@@ -97,15 +97,16 @@ local function on_predict_command()
 			if scoped then
 				-- player is scoped normally
 				local fov = entity_get_prop(local_player, "m_iFOV")
+				if fov ~= nil then
+					if fov ~= 0 and fov ~= 90 then
+						local fov_extra = (fov == 15 or fov == 10) and ui_get(second_zoom_reference) or ui_get(first_zoom_reference)
+						fov = fov + fov_extra
+					end
 
-				if fov ~= nil and fov ~= 0 and fov ~= 90 then
-					local fov_extra = fov == 15 and ui_get(second_zoom_reference) or ui_get(first_zoom_reference)
-					fov = fov + fov_extra
-				end
-
-				entity_set_prop(local_player, "m_iDefaultFOV", fov == 0 and 90 or fov)
-				fov_changed = true
-				return
+					entity_set_prop(local_player, "m_iDefaultFOV", fov == 0 and 90 or fov)
+					fov_changed = true
+					return
+			end
 			elseif unscoping then
 				-- player is unscoping with a single zoom weapon
 				local fov = entity_get_prop(local_player, "m_iFOV")
