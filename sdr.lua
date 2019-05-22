@@ -1,39 +1,29 @@
-local ui_get, sdr = ui.get, cvar.sdr
+local ui_get, sdr, globals_mapname = ui.get, cvar.sdr, globals.mapname
 
---http://steamcdn-a.akamaihd.net/apps/sdr/network_config.json
 local datacenters = {
-	["ams"] = "Amsterdam, Netherlands",
 	["atl"] = "Atlanta, USA",
 	["bom"] = "Bombay, India",
 	["dxb"] = "Dubai, United Arab Emirates",
-	["eat"] = "Moses Lake (old), USA",
-	["fra"] = "Frankfurt, Germany",
-	["ggru"] = "Google Cloud sa-east1, Brazil",
-	["ghel"] = "Google Cloud eu-north1, Finland",
+	["eat"] = "Moses Lake, USA",
+	["gnrt"] = "Shibuya, Japan",
 	["gru"] = "Sao Paulo, Brazil",
+	["gtpe"] = "Google asia-east1",
 	["hkg"] = "Hong Kong, PRC",
 	["iad"] = "Sterling, USA",
-	["jnb"] = "Johannesburg, RSA",
+	["jnb"] = "Saldanha Bay Local Municipality, RSA",
 	["lax"] = "Los Angeles, USA",
-	["lhr"] = "London, United Kingdom",
-	["lim"] = "Lima, Peru",
-	["lux"] = "Luxembourg, Luxembourg",
+	["lim"] = "Brena, Peru",
+	["lux"] = "Berlin, Germany",
 	["maa"] = "Chennai, India",
 	["mad"] = "Madrid, Spain",
-	["man"] = "Manilla, Philippines",
-	["mwh"] = "Moses Lake, USA",
-	["okc"] = "Oklahoma City, USA",
 	["ord"] = "Chicago, USA",
-	["par"] = "Paris, France",
-	["scl"] = "Santiago, Chile",
-	["sea"] = "Seattle, USA",
+	["scl"] = "Lo Barnechea, Chile",
 	["sgp"] = "Singapore, Singapore",
+	["shb"] = "Pudong, PRC",
 	["sto"] = "Stockholm (Kista), Sweden",
-	["sto2"] = "Stockholm (Bromma), Sweden",
 	["syd"] = "Sydney, Australia",
-	["tyo"] = "Tokyo, Japan",
-	["tyo1"] = "Tokyo (TY2), Japan",
-	["vie"] = "Vienna, Austria",
+	["tyo"] = "Shibuya, Japan",
+	["vie"] = "Kaltenleutgeben, Austria",
 	["waw"] = "Warsaw, Poland",
 }
 
@@ -49,14 +39,37 @@ table.sort(datacenters_names)
 
 --create a new combobox with a "Off" element and the datacenter names table
 local datacenter_reference = ui.new_combobox("MISC", "Miscellaneous", "Force relay cluster", "Off", unpack(datacenters_names))
+local task_running = false
+
+local function apply_datacenter()
+	local datacenter = globals_mapname() == nil and ui_get(datacenter_reference) or "Off"
+	local datacenter_id = datacenters_name_to_id[datacenter] or "\0"
+
+	-- basically the same as executing "sdr SDRClient_ForceRelayCluster " .. datacenter_id in console
+	sdr:invoke_callback("SDRClient_ForceRelayCluster", datacenter_id)
+
+	--client.log("Applied ", datacenter_id == "\0" and "none" or datacenter_id)
+end
+
+local function task()
+	apply_datacenter()
+
+	if ui_get(datacenter_reference) ~= "Off" then
+		client.delay_call(1, task)
+	else
+		task_running = false
+	end
+end
 
 --set a ui callback that gets executed when the menu element is changed
 local function on_datacenter_changed()
-	--look up the datacenter ID and fall back to "" if not found (Off)
-	local datacenter_id = datacenters_name_to_id[ui_get(datacenter_reference)] or "\0"
+	apply_datacenter()
+	local enabled = ui_get(datacenter_reference) ~= "Off"
 
-	--invoke the callback of the "sdr" command (which also has some nice other options) with "ClientForceRelayCluster <datacenter_id>"
-	sdr:invoke_callback("ClientForceRelayCluster", datacenter_id)
+	if not task_running and enabled then
+		client.delay_call(1, task)
+		task_running = true
+	end
 end
 ui.set_callback(datacenter_reference, on_datacenter_changed)
 on_datacenter_changed()
