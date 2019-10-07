@@ -1,17 +1,15 @@
-local math_sin, math_cos, math_rad, math_sqrt, math_deg, math_atan2 = math.sin, math.cos, math.rad, math.sqrt, math.deg, math.atan2
-local renderer_world_to_screen, renderer_line, client_eye_position, client_userid_to_entindex = renderer.world_to_screen, renderer.line, client.eye_position, client.userid_to_entindex
-local entity_is_alive, entity_get_local_player, entity_get_prop, entity_get_player_weapon, entity_get_classname = entity.is_alive, entity.get_local_player, entity.get_prop, entity.get_player_weapon, entity.get_classname
-local ui_get, ui_set, ui_set_visible = ui.get, ui.set, ui.set_visible
+-- local variables for API functions. any changes to the line below will be lost on re-generation
+local client_eye_position, client_set_event_callback, client_userid_to_entindex, entity_get_classname, entity_get_local_player, entity_get_player_weapon, entity_get_prop, entity_is_alive, math_atan2, math_cos, math_deg, math_rad, math_sin, math_sqrt, renderer_line, renderer_triangle, renderer_world_to_screen, ui_get, ui_new_checkbox, ui_new_color_picker, ui_new_hotkey, ui_new_multiselect, ui_new_slider, ui_reference, ui_set, ui_set_callback, ui_set_visible = client.eye_position, client.set_event_callback, client.userid_to_entindex, entity.get_classname, entity.get_local_player, entity.get_player_weapon, entity.get_prop, entity.is_alive, math.atan2, math.cos, math.deg, math.rad, math.sin, math.sqrt, renderer.line, renderer.triangle, renderer.world_to_screen, ui.get, ui.new_checkbox, ui.new_color_picker, ui.new_hotkey, ui.new_multiselect, ui.new_slider, ui.reference, ui.set, ui.set_callback, ui.set_visible
 
-local quickstop_reference, quickstop_hotkey_reference = ui.reference("RAGE", "Other", "Quick stop")
-local quickstop_in_fire_reference = ui.reference("RAGE", "Other", "Quick stop in fire")
+local quickstop_reference, quickstop_hotkey_reference = ui_reference("RAGE", "Other", "Quick stop")
+local quickstop_in_fire_reference = ui_reference("RAGE", "Other", "Quick stop in fire")
 
-local enabled_reference = ui.new_checkbox("RAGE", "Other", "Quick peek")
-local hotkey_reference = ui.new_hotkey("RAGE", "Other", "Quick peek hotkey", true)
-local triggers_reference = ui.new_multiselect("RAGE", "Other", "\nQuick peek triggers", {"X shots", "Kill", "Standing still"})
-local shots_reference = ui.new_slider("RAGE", "Other", "\nQuick peek shots", 1, 6, 1)
-local draw_reference = ui.new_checkbox("VISUALS", "Other ESP", "Draw quick peek")
-local color_reference = ui.new_color_picker("VISUALS", "Other ESP", "Quick peek color", 198, 70, 70, 146)
+local enabled_reference = ui_new_checkbox("RAGE", "Other", "Quick peek")
+local hotkey_reference = ui_new_hotkey("RAGE", "Other", "Quick peek hotkey", true)
+local triggers_reference = ui_new_multiselect("RAGE", "Other", "\nQuick peek triggers", {"X shots", "Kill", "Standing still"})
+local shots_reference = ui_new_slider("RAGE", "Other", "\nQuick peek shots", 1, 6, 1)
+local draw_reference = ui_new_checkbox("VISUALS", "Other ESP", "Draw quick peek")
+local color_reference = ui_new_color_picker("VISUALS", "Other ESP", "Quick peek color", 198, 70, 70, 146)
 
 local single_fire_weapons = {
 	"CDeagle",
@@ -38,7 +36,7 @@ local function draw_circle_3d(x, y, z, radius, r, g, b, a, accuracy, width, outl
 		local screen_x_line, screen_y_line = renderer_world_to_screen(lineX, lineY, lineZ)
 		if screen_x_line ~=nil and screen_x_line_old ~= nil then
 			if fill_a and center_x ~= nil then
-				renderer.triangle(screen_x_line, screen_y_line, screen_x_line_old, screen_y_line_old, center_x, center_y, fill_r, fill_g, fill_b, fill_a)
+				renderer_triangle(screen_x_line, screen_y_line, screen_x_line_old, screen_y_line_old, center_x, center_y, fill_r, fill_g, fill_b, fill_a)
 			end
 			for i=1, width do
 				local i=i-1
@@ -110,8 +108,8 @@ local function update_visiblity()
 		pos_x = nil
 	end
 end
-ui.set_callback(enabled_reference, update_visiblity)
-ui.set_callback(triggers_reference, update_visiblity)
+ui_set_callback(enabled_reference, update_visiblity)
+ui_set_callback(triggers_reference, update_visiblity)
 update_visiblity()
 
 local function on_paint()
@@ -135,19 +133,19 @@ local function on_paint()
 		draw_circle_3d(pos_x, pos_y, pos_z, 14, r, g, b, a, 3, 2, false, 0, 1, r, g, b, a*0.6)
 	end
 end
-client.set_event_callback("paint", on_paint)
+client_set_event_callback("paint", on_paint)
 
 local function on_aim_fire(e)
 	shots = shots + 1
 end
-client.set_event_callback("aim_fire", on_aim_fire)
+client_set_event_callback("aim_fire", on_aim_fire)
 
 local function on_player_death(e)
 	if table_contains(ui_get(triggers_reference), "Kill") and client_userid_to_entindex(e.attacker) == entity_get_local_player() then
 		shots = -1
 	end
 end
-client.set_event_callback("player_death", on_player_death)
+client_set_event_callback("player_death", on_player_death)
 
 local function on_setup_command(cmd)
 	if not ui_get(enabled_reference) then
@@ -222,7 +220,7 @@ local function on_setup_command(cmd)
 
 	hotkey_prev = hotkey
 end
-client.set_event_callback("setup_command", on_setup_command)
+client_set_event_callback("setup_command", on_setup_command)
 
 local function on_shutdown()
 	if quickstop_prev ~= nil then
@@ -230,4 +228,4 @@ local function on_shutdown()
 		quickstop_prev = nil
 	end
 end
-client.set_event_callback("shutdown", on_shutdown)
+client_set_event_callback("shutdown", on_shutdown)
