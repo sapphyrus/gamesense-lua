@@ -1,8 +1,7 @@
 -- local variables for API functions. any changes to the line below will be lost on re-generation
 local client_eye_position, client_set_event_callback, client_userid_to_entindex, entity_get_classname, entity_get_local_player, entity_get_player_weapon, entity_get_prop, entity_is_alive, math_atan2, math_cos, math_deg, math_rad, math_sin, math_sqrt, renderer_line, renderer_triangle, renderer_world_to_screen, ui_get, ui_new_checkbox, ui_new_color_picker, ui_new_hotkey, ui_new_multiselect, ui_new_slider, ui_reference, ui_set, ui_set_callback, ui_set_visible = client.eye_position, client.set_event_callback, client.userid_to_entindex, entity.get_classname, entity.get_local_player, entity.get_player_weapon, entity.get_prop, entity.is_alive, math.atan2, math.cos, math.deg, math.rad, math.sin, math.sqrt, renderer.line, renderer.triangle, renderer.world_to_screen, ui.get, ui.new_checkbox, ui.new_color_picker, ui.new_hotkey, ui.new_multiselect, ui.new_slider, ui.reference, ui.set, ui.set_callback, ui.set_visible
 
-local quickstop_reference, quickstop_hotkey_reference = ui_reference("RAGE", "Other", "Quick stop")
-local quickstop_in_fire_reference = ui_reference("RAGE", "Other", "Quick stop in fire")
+local quickstop_reference = ui_reference("RAGE", "Other", "Quick stop")
 
 local enabled_reference = ui_new_checkbox("RAGE", "Other", "Quick peek")
 local hotkey_reference = ui_new_hotkey("RAGE", "Other", "Quick peek hotkey", true)
@@ -113,16 +112,17 @@ ui_set_callback(triggers_reference, update_visiblity)
 update_visiblity()
 
 local function on_paint()
-	local should_draw = ui_get(enabled_reference) and ui_get(draw_reference) and ui_get(hotkey_reference) and entity_is_alive(entity_get_local_player()) and pos_x ~= nil
-	if not should_draw or quickstop_allowed then
+	local is_enabled = ui_get(enabled_reference) and ui_get(hotkey_reference) and pos_x ~= nil and entity_is_alive(entity_get_local_player())
+
+	if quickstop_allowed or not is_enabled then
 		if quickstop_prev ~= nil then
-			ui_set(quickstop_reference, quickstop_prev)
+			ui_set(quickstop_reference, true)
 			quickstop_prev = nil
 		end
 		quickstop_allowed = nil
 	end
 
-	if not should_draw then
+	if not is_enabled or not ui_get(draw_reference) then
 		return
 	end
 
@@ -200,13 +200,9 @@ local function on_setup_command(cmd)
 
 					cmd.move_yaw = yaw
 
-					local quickstop = ui_get(quickstop_reference)
-					if quickstop ~= "Off" then
-						if quickstop_prev == nil then
-							quickstop_prev = quickstop
-						end
-						ui_set(quickstop_reference, "Off")
-						ui_set_visible(quickstop_in_fire_reference, true)
+					if ui_get(quickstop_reference) then
+						quickstop_prev = true
+						ui_set(quickstop_reference, false)
 					end
 				end
 			end
@@ -224,7 +220,7 @@ client_set_event_callback("setup_command", on_setup_command)
 
 local function on_shutdown()
 	if quickstop_prev ~= nil then
-		ui_set(quickstop_reference, quickstop_prev)
+		ui_set(quickstop_reference, true)
 		quickstop_prev = nil
 	end
 end
