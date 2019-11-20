@@ -166,7 +166,7 @@ local teams = {
 	{"Terrorist", true}
 }
 local team_references, team_model_paths = {}, {}
-local needs_full_update, model_path_prev, model_index = false
+local model_index_prev
 
 for i=1, #teams do
 	local teamname, is_t = unpack(teams[i])
@@ -200,7 +200,7 @@ client.set_event_callback("net_update_end", function()
 		return
 	end
 
-	local model_path
+	local model_path, model_index
 	local teamnum = entity.get_prop(local_player, "m_iTeamNum")
 	local is_t
 	if teamnum == 2 then
@@ -220,10 +220,10 @@ client.set_event_callback("net_update_end", function()
 		end
 	end
 
-	if model_path ~= model_path_prev then
-		if model_path == nil then
-			model_index = nil
-		else
+	if entity.is_alive(local_player) then
+		local model_index
+
+		if model_path ~= nil then
 			model_index = get_model_index(ivmodelinfo, model_path)
 
 			if model_index == -1 then
@@ -231,24 +231,16 @@ client.set_event_callback("net_update_end", function()
 			end
 		end
 
-		needs_full_update = true
-		model_path_prev = model_path
+		if model_index ~= model_index_prev then
+			local override_knife = ui.get(override_knife_reference)
+
+			ui.set(override_knife_reference, not override_knife)
+			ui.set(override_knife_reference, override_knife)
+		end
+		model_index_prev = model_index
+
+		if model_index ~= nil then
+			entity.set_prop(local_player, "m_nModelIndex", model_index)
+		end
 	end
-
-	if needs_full_update and entity.is_alive(local_player)then
-		local override_knife = ui.get(override_knife_reference)
-
-		ui.set(override_knife_reference, not override_knife)
-		ui.set(override_knife_reference, override_knife)
-
-		needs_full_update = false
-	end
-
-	if model_index ~= nil then
-		entity.set_prop(local_player, "m_nModelIndex", model_index)
-	end
-end)
-
-client.set_event_callback("level_init", function()
-	model_path_prev = nil
 end)
