@@ -166,7 +166,7 @@ local teams = {
 	{"Terrorist", true}
 }
 local team_references, team_model_paths = {}, {}
-local model_path_prev, model_index
+local needs_full_update, model_path_prev, model_index = false
 
 for i=1, #teams do
 	local teamname, is_t = unpack(teams[i])
@@ -177,7 +177,7 @@ for i=1, #teams do
 	for i=1, #customplayers do
 		local model_name, model_path, model_is_t = unpack(customplayers[i])
 
-		if model_is_t == is_t then
+		if model_is_t == nil or model_is_t == is_t then
 			table.insert(model_names, model_name)
 			l_i = l_i + 1
 			team_model_paths[is_t][l_i] = model_path
@@ -225,14 +225,23 @@ client.set_event_callback("net_update_end", function()
 			model_index = nil
 		else
 			model_index = get_model_index(ivmodelinfo, model_path)
+
+			if model_index == -1 then
+				model_index = nil
+			end
 		end
 
-		ui.set(override_knife_reference, false)
-		ui.set(override_knife_reference, true)
+		needs_full_update = true
+		model_path_prev = model_path
 	end
 
-	if entity.is_alive(local_player) then
-		model_path_prev = model_path
+	if needs_full_update and entity.is_alive(local_player)then
+		local override_knife = ui.get(override_knife_reference)
+
+		ui.set(override_knife_reference, not override_knife)
+		ui.set(override_knife_reference, override_knife)
+
+		needs_full_update = false
 	end
 
 	if model_index ~= nil then
