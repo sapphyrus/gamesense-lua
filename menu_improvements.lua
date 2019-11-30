@@ -10,20 +10,17 @@ local string_find, string_format, string_gsub, string_len, string_gmatch, string
 local ipairs, assert, pairs, next, tostring, tonumber, setmetatable, unpack, type, getmetatable, pcall, error = ipairs, assert, pairs, next, tostring, tonumber, setmetatable, unpack, type, getmetatable, pcall, error
 --end of local variables
 
-local orig_save_reference = ui.reference("MISC", "Other", "Save config")
-local export_reference = ui.reference("MISC", "Other", "Export to clipboard")
-local reset_reference = ui.reference("MISC", "Other", "Reset config")
-local reset_layout_reference = ui.reference("MISC", "Other", "Reset menu layout")
-local unload_reference = ui.reference("MISC", "Other", "Unload")
+local orig_save_reference = ui.reference("CONFIG", "Presets", "Save")
+local export_reference = ui.reference("CONFIG", "Presets", "Export to clipboard")
+local reset_reference = ui.reference("CONFIG", "Presets", "Reset")
+local reset_layout_reference = ui.reference("MISC", "Settings", "Reset menu layout")
+local unload_reference = ui.reference("MISC", "Settings", "Unload")
 local hitboxes_reference = ui.reference("RAGE", "Aimbot", "Target hitbox")
 local override_awp_reference = ui.reference("RAGE", "Aimbot", "Override AWP")
-local stomach_hitbox_scale_reference = ui.reference("RAGE", "Aimbot", "Stomach hitbox scale")
 local anti_untrusted_reference = ui.reference("MISC", "Settings", "Anti-untrusted")
 local aimstep_reference = ui.reference("RAGE", "Aimbot", "Reduce aim step")
 local force_baim_reference = ui.reference("RAGE", "Other", "Force body aim")
-local lua_script_manager_reference = ui.reference("MISC", "Other", "Lua script manager")
 local remove_spread_reference = ui.reference("RAGE", "Other", "Remove spread")
-local reload_scripts_reference, script_listbox_reference = ui.reference("MISC", "Lua", "Reload active scripts")
 local dump_mm_wins_reference = ui.reference("MISC", "Miscellaneous", "Dump MM wins")
 
 local multipoint_hitboxes_reference, _, multipoint_mode_reference = ui.reference("RAGE", "Aimbot", "Multi-point")
@@ -42,18 +39,17 @@ local function save()
 	ui_set_visible(save_cancel_reference, true)
 	last_save_click = realtime
 	client_exec("playvol ui/weapon_cant_buy 1")
-	client_delay_call(5,
-		function(realtime)
-			if last_save_click == realtime then
-				client.log("Timed out")
-				client_exec("playvol ui/weapon_cant_buy 1")
-				last_save_click = nil
-				ui_set_visible(save_reference, true)
-				ui_set_visible(save_confirm_reference, false)
-				ui_set_visible(save_cancel_reference, false)
-			end
-		end,
-		realtime)
+	client_delay_call(5, function(realtime)
+        if last_save_click == realtime then
+            client.log("Timed out")
+            client_exec("playvol ui/weapon_cant_buy 1")
+            last_save_click = nil
+            ui_set_visible(save_reference, true)
+            ui_set_visible(save_confirm_reference, false)
+            ui_set_visible(save_cancel_reference, false)
+        end
+    end,
+    realtime)
 end
 
 local function save_confirm()
@@ -79,26 +75,25 @@ local function ui_element_exists(tab, container, name)
 	return val[1]
 end
 
-ui.new_button("MISC", "Other", "Save config ", save)
-ui.new_button("MISC", "Other", "Save config: CANCEL", save_cancel)
-ui.new_button("MISC", "Other", "Save config: CONFIRM", save_confirm)
+ui.new_button("CONFIG", "Presets", "Save", save)
+ui.new_button("CONFIG", "Presets", "Save: CANCEL", save_cancel)
+ui.new_button("CONFIG", "Presets", "Save: CONFIRM", save_confirm)
 
 --ui.new_button doesn't return a reference - this is the ghetto fix
-save_reference = ui.reference("MISC", "Other", "Save config ")
-save_confirm_reference = ui.reference("MISC", "Other", "Save config: CANCEL")
-save_cancel_reference = ui.reference("MISC", "Other", "Save config: CONFIRM")
+save_reference = ui.reference("CONFIG", "Presets", "Save")
+save_confirm_reference = ui.reference("CONFIG", "Presets", "Save: CANCEL")
+save_cancel_reference = ui.reference("CONFIG", "Presets", "Save: CONFIRM")
 
 ui_set_visible(save_confirm_reference, false)
 ui_set_visible(save_cancel_reference, false)
 
-local show_reference = ui.new_checkbox("MISC", "Other", "Show other buttons")
+local show_reference = ui.new_checkbox("CONFIG", "Presets", "Show other buttons")
 
 local function on_show_change()
 	local show = ui_get(show_reference)
 	ui_set_visible(reset_reference, show)
 	ui_set_visible(reset_layout_reference, show)
 	ui_set_visible(unload_reference, show)
-	ui_set_visible(lua_script_manager_reference, show)
 end
 on_show_change()
 ui.set_callback(show_reference, on_show_change)
@@ -110,7 +105,6 @@ local function task()
 
 	--ui_set_visible(strict_hitbox_checks_reference, not headonly)
 	ui_set_visible(override_awp_reference, not headonly and not anti_ut)
-	ui_set_visible(stomach_hitbox_scale_reference, not headonly)
 	ui_set_visible(force_baim_reference, not headonly)
 	ui_set_visible(remove_spread_reference, not anti_ut)
 
@@ -145,28 +139,5 @@ local function task()
 end
 task()
 --ui_set(lua_script_manager_reference, true)
-
-ui.new_button("MISC", "Lua", "Reload script list", function()
-	local selection = ui_get(script_listbox_reference)
-	ui_set(lua_script_manager_reference, true)
-	--client.delay_call(0.1, function()
-	--	client.log(selection)
-	ui_set(script_listbox_reference, selection)
-	--end)
-end)
-
-local load_cvar = cvar.bugreporter_uploadasync
-
-client.delay_call(0.02, function()
-	local realtime, value = globals_realtime(), load_cvar:get_float()
-
-	if realtime-value > 5 or value-realtime > 5 or value == 0 then
-		ui_set(lua_script_manager_reference, true)
-	end
-end)
-
-client.set_event_callback("shutdown", function()
-	load_cvar:set_raw_float(globals_realtime())
-end)
 
 ui.set_visible(dump_mm_wins_reference, false)
