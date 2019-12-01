@@ -1,172 +1,102 @@
---local variables for API functions. Generated using https://github.com/sapphyrus/gamesense-lua/blob/master/generate_api.lua
-local client_latency, client_set_clan_tag, client_log, client_timestamp, client_userid_to_entindex, client_trace_line, client_set_event_callback, client_screen_size, client_trace_bullet, client_system_time, client_color_log, client_open_panorama_context, client_delay_call, client_visible, client_exec, client_eye_position, client_set_cvar, client_scale_damage, client_draw_hitboxes, client_get_cvar, client_camera_angles, client_draw_debug_text, client_random_int, client_random_float = client.latency, client.set_clan_tag, client.log, client.timestamp, client.userid_to_entindex, client.trace_line, client.set_event_callback, client.screen_size, client.trace_bullet, client.system_time, client.color_log, client.open_panorama_context, client.delay_call, client.visible, client.exec, client.eye_position, client.set_cvar, client.scale_damage, client.draw_hitboxes, client.get_cvar, client.camera_angles, client.draw_debug_text, client.random_int, client.random_float
-local entity_get_player_resource, entity_get_local_player, entity_is_enemy, entity_get_bounding_box, entity_is_dormant, entity_get_steam64, entity_get_player_name, entity_hitbox_position, entity_get_game_rules, entity_get_all, entity_set_prop, entity_is_alive, entity_get_player_weapon, entity_get_prop, entity_get_players, entity_get_classname = entity.get_player_resource, entity.get_local_player, entity.is_enemy, entity.get_bounding_box, entity.is_dormant, entity.get_steam64, entity.get_player_name, entity.hitbox_position, entity.get_game_rules, entity.get_all, entity.set_prop, entity.is_alive, entity.get_player_weapon, entity.get_prop, entity.get_players, entity.get_classname
-local globals_realtime, globals_absoluteframetime, globals_tickcount, globals_lastoutgoingcommand, globals_curtime, globals_mapname, globals_tickinterval, globals_framecount, globals_frametime, globals_maxplayers = globals.realtime, globals.absoluteframetime, globals.tickcount, globals.lastoutgoingcommand, globals.curtime, globals.mapname, globals.tickinterval, globals.framecount, globals.frametime, globals.maxplayers
-local ui_new_slider, ui_new_combobox, ui_reference, ui_is_menu_open, ui_set_visible, ui_new_textbox, ui_new_color_picker, ui_set_callback, ui_set, ui_new_checkbox, ui_new_hotkey, ui_new_button, ui_new_multiselect, ui_get = ui.new_slider, ui.new_combobox, ui.reference, ui.is_menu_open, ui.set_visible, ui.new_textbox, ui.new_color_picker, ui.set_callback, ui.set, ui.new_checkbox, ui.new_hotkey, ui.new_button, ui.new_multiselect, ui.get
-local renderer_circle_outline, renderer_rectangle, renderer_gradient, renderer_circle, renderer_text, renderer_line, renderer_measure_text, renderer_indicator, renderer_world_to_screen = renderer.circle_outline, renderer.rectangle, renderer.gradient, renderer.circle, renderer.text, renderer.line, renderer.measure_text, renderer.indicator, renderer.world_to_screen
-local math_ceil, math_tan, math_cos, math_sinh, math_pi, math_max, math_atan2, math_floor, math_sqrt, math_deg, math_atan, math_fmod, math_acos, math_pow, math_abs, math_min, math_sin, math_log, math_exp, math_cosh, math_asin, math_rad = math.ceil, math.tan, math.cos, math.sinh, math.pi, math.max, math.atan2, math.floor, math.sqrt, math.deg, math.atan, math.fmod, math.acos, math.pow, math.abs, math.min, math.sin, math.log, math.exp, math.cosh, math.asin, math.rad
-local table_sort, table_remove, table_concat, table_insert = table.sort, table.remove, table.concat, table.insert
-local string_find, string_format, string_gsub, string_len, string_gmatch, string_match, string_reverse, string_upper, string_lower, string_sub = string.find, string.format, string.gsub, string.len, string.gmatch, string.match, string.reverse, string.upper, string.lower, string.sub
-local ipairs, assert, pairs, next, tostring, tonumber, setmetatable, unpack, type, getmetatable, pcall, error = ipairs, assert, pairs, next, tostring, tonumber, setmetatable, unpack, type, getmetatable, pcall, error
---end of local variables
+local function recreate_button(tab, container, name, tab_new, container_new, name_new, callback, callback_pre)
+	local reference = ui.reference(tab, container, name)
+	ui.set_visible(reference, false)
+	local new_reference = ui.new_button(tab_new, container_new, name_new, function()
+		if callback_pre ~= nil then
+			callback_pre(reference)
+		end
+		ui.set(reference, true)
+		if callback ~= nil then
+			callback(reference)
+		end
+	end)
+	return new_reference
+end
 
-local orig_save_reference = ui.reference("MISC", "Other", "Save config")
-local export_reference = ui.reference("MISC", "Other", "Export to clipboard")
-local reset_reference = ui.reference("MISC", "Other", "Reset config")
-local reset_layout_reference = ui.reference("MISC", "Other", "Reset menu layout")
-local unload_reference = ui.reference("MISC", "Other", "Unload")
-local hitboxes_reference = ui.reference("RAGE", "Aimbot", "Target hitbox")
-local override_awp_reference = ui.reference("RAGE", "Aimbot", "Override AWP")
-local stomach_hitbox_scale_reference = ui.reference("RAGE", "Aimbot", "Stomach hitbox scale")
-local anti_untrusted_reference = ui.reference("MISC", "Settings", "Anti-untrusted")
-local aimstep_reference = ui.reference("RAGE", "Aimbot", "Reduce aim step")
-local force_baim_reference = ui.reference("RAGE", "Other", "Force body aim")
-local lua_script_manager_reference = ui.reference("MISC", "Other", "Lua script manager")
-local remove_spread_reference = ui.reference("RAGE", "Other", "Remove spread")
-local reload_scripts_reference, script_listbox_reference = ui.reference("MISC", "Lua", "Reload active scripts")
-local dump_mm_wins_reference = ui.reference("MISC", "Miscellaneous", "Dump MM wins")
+local function recreate_button_confirm(tab, container, name, tab_new, container_new, name_new, callback, callback_pre)
+	local reference = ui.reference(tab, container, name)
+	ui.set_visible(reference, false)
 
-local multipoint_hitboxes_reference, _, multipoint_mode_reference = ui.reference("RAGE", "Aimbot", "Multi-point")
-local multipoint_scale_reference = ui.reference("RAGE", "Aimbot", "Multi-point scale")
-local multipoint_dynamic_reference = ui.reference("RAGE", "Aimbot", "Dynamic Multi-point")
+	local pending_action, confirm_reference, cancel_reference, new_reference
+	cancel_reference = ui.new_button(tab_new, container_new, name_new .. " > Cancel", function()
+		ui.set_visible(confirm_reference, false)
+		ui.set_visible(cancel_reference, false)
+		ui.set_visible(new_reference, true)
+	end)
+	confirm_reference = ui.new_button(tab_new, container_new, name_new .. " > Confirm", function()
+		ui.set_visible(confirm_reference, false)
+		ui.set_visible(cancel_reference, false)
+		ui.set_visible(new_reference, true)
+		if callback_pre ~= nil then
+			callback_pre(reference)
+		end
+		ui.set(reference, true)
+		if callback ~= nil then
+			callback(reference)
+		end
+	end)
+	new_reference = ui.new_button(tab_new, container_new, name_new, function()
+		ui.set_visible(new_reference, false)
+		ui.set_visible(confirm_reference, true)
+		ui.set_visible(cancel_reference, true)
+		pending_action = globals.realtime()
+		local current_action = pending_action
 
-local last_save_click
-local save_reference, save_confirm_reference, save_cancel_reference
-
-ui.set_visible(orig_save_reference, false)
-local function save()
-	local realtime = globals_realtime()
-	ui_set(export_reference, true)
-	ui_set_visible(save_reference, false)
-	ui_set_visible(save_confirm_reference, true)
-	ui_set_visible(save_cancel_reference, true)
-	last_save_click = realtime
-	client_exec("playvol ui/weapon_cant_buy 1")
-	client_delay_call(5,
-		function(realtime)
-			if last_save_click == realtime then
-				client.log("Timed out")
-				client_exec("playvol ui/weapon_cant_buy 1")
-				last_save_click = nil
-				ui_set_visible(save_reference, true)
-				ui_set_visible(save_confirm_reference, false)
-				ui_set_visible(save_cancel_reference, false)
+		client.delay_call(5, function()
+			if current_action == pending_action then
+				ui.set_visible(confirm_reference, false)
+				ui.set_visible(cancel_reference, false)
+				ui.set_visible(new_reference, true)
 			end
-		end,
-		realtime)
+		end)
+	end)
+	ui.set_visible(confirm_reference, false)
+	ui.set_visible(cancel_reference, false)
 end
 
-local function save_confirm()
-	client.log("Config exported to clipboard and saved")
-	ui_set_visible(save_reference, true)
-	ui_set_visible(save_confirm_reference, false)
-	ui_set_visible(save_cancel_reference, false)
-	ui_set(orig_save_reference, true)
-	last_save_click = nil
-	client_exec("playvol ui/buttonclick 1")
-end
+local function add_run_callback(tab, container, name, callback, ...)
+	local args = {...}
+	local ref = ui.reference(tab, container, name)
 
-local function save_cancel()
-	ui_set_visible(save_reference, true)
-	ui_set_visible(save_confirm_reference, false)
-	ui_set_visible(save_cancel_reference, false)
-	last_save_click = nil
-	client_exec("playvol ui/menu_invalid 1")
-end
-
-local function ui_element_exists(tab, container, name)
-	local val = {pcall(ui.reference, tab, container, name)}
-	return val[1]
-end
-
-ui.new_button("MISC", "Other", "Save config ", save)
-ui.new_button("MISC", "Other", "Save config: CANCEL", save_cancel)
-ui.new_button("MISC", "Other", "Save config: CONFIRM", save_confirm)
-
---ui.new_button doesn't return a reference - this is the ghetto fix
-save_reference = ui.reference("MISC", "Other", "Save config ")
-save_confirm_reference = ui.reference("MISC", "Other", "Save config: CANCEL")
-save_cancel_reference = ui.reference("MISC", "Other", "Save config: CONFIRM")
-
-ui_set_visible(save_confirm_reference, false)
-ui_set_visible(save_cancel_reference, false)
-
-local show_reference = ui.new_checkbox("MISC", "Other", "Show other buttons")
-
-local function on_show_change()
-	local show = ui_get(show_reference)
-	ui_set_visible(reset_reference, show)
-	ui_set_visible(reset_layout_reference, show)
-	ui_set_visible(unload_reference, show)
-	ui_set_visible(lua_script_manager_reference, show)
-end
-on_show_change()
-ui.set_callback(show_reference, on_show_change)
-
-local function task()
-	local hitboxes = ui_get(hitboxes_reference)
-	local headonly = #hitboxes == 1 and hitboxes[1] == "Head"
-	local anti_ut = ui_get(anti_untrusted_reference)
-
-	--ui_set_visible(strict_hitbox_checks_reference, not headonly)
-	ui_set_visible(override_awp_reference, not headonly and not anti_ut)
-	ui_set_visible(stomach_hitbox_scale_reference, not headonly)
-	ui_set_visible(force_baim_reference, not headonly)
-	ui_set_visible(remove_spread_reference, not anti_ut)
-
-	local mp_enabled = #ui_get(multipoint_hitboxes_reference) > 0
-	ui_set_visible(multipoint_mode_reference, mp_enabled)
-	ui_set_visible(multipoint_scale_reference, mp_enabled)
-	ui_set_visible(multipoint_dynamic_reference, mp_enabled)
-
-	local is_valve_server = false
-	local game_rules = entity_get_game_rules()
-	if game_rules ~= nil then
-		is_valve_server = entity_get_prop(game_rules, "m_bIsValveDS") == 1
+	local function run_callback()
+		callback(ref, unpack(args))
 	end
 
-	ui_set_visible(aimstep_reference, is_valve_server)
-	if not is_valve_server then
-		ui_set(aimstep_reference, false)
-	end
-
-	if not ui_is_menu_open() then
-		if last_save_click ~= nil then
-			save_cancel()
-		end
-
-		if ui_get(show_reference) then
-			ui_set(show_reference, false)
-			on_show_change()
-		end
-	end
-
-	client_delay_call(0.05, task)
+	ui.set_callback(ref, run_callback)
+	run_callback(ref)
 end
-task()
---ui_set(lua_script_manager_reference, true)
 
-ui.new_button("MISC", "Lua", "Reload script list", function()
-	local selection = ui_get(script_listbox_reference)
-	ui_set(lua_script_manager_reference, true)
-	--client.delay_call(0.1, function()
-	--	client.log(selection)
-	ui_set(script_listbox_reference, selection)
-	--end)
+recreate_button("CONFIG", "Presets", "Load", "CONFIG", "Presets", "Load")
+recreate_button_confirm("CONFIG", "Presets", "Save", "CONFIG", "Presets", "Save")
+recreate_button_confirm("CONFIG", "Presets", "Delete", "CONFIG", "Presets", "Delete")
+recreate_button("CONFIG", "Presets", "Reset", "CONFIG", "Presets", "Reset")
+recreate_button("CONFIG", "Presets", "Import from clipboard", "CONFIG", "Presets", "Import from clipboard")
+recreate_button("CONFIG", "Presets", "Export to clipboard", "CONFIG", "Presets", "Export to clipboard")
+
+local reset_menu_layout_reference
+local lock_menu_layout_reference = ui.reference("MISC", "Settings", "Lock menu layout")
+local lock_reference = ui.new_button("CONFIG", "Presets", "Lock menu layout", function()
+	ui.set(lock_menu_layout_reference, true)
 end)
-
-local load_cvar = cvar.bugreporter_uploadasync
-
-client.delay_call(0.02, function()
-	local realtime, value = globals_realtime(), load_cvar:get_float()
-
-	if realtime-value > 5 or value-realtime > 5 or value == 0 then
-		ui_set(lua_script_manager_reference, true)
-	end
+local unlock_reference = ui.new_button("CONFIG", "Presets", "Unlock menu layout", function()
+	ui.set(lock_menu_layout_reference, false)
 end)
+local function on_lock_menu_layout_changed()
+	local value = ui.get(lock_menu_layout_reference)
+	ui.set_visible(unlock_reference, value)
+	ui.set_visible(lock_reference, not value)
+	ui.set_visible(reset_menu_layout_reference, not value)
+end
+reset_menu_layout_reference = recreate_button("MISC", "Settings", "Reset menu layout", "CONFIG", "Presets", "Reset menu layout")
+ui.set_visible(lock_menu_layout_reference, false)
+ui.set_callback(lock_menu_layout_reference, on_lock_menu_layout_changed)
+on_lock_menu_layout_changed()
+recreate_button_confirm("MISC", "Settings", "Unload", "CONFIG", "Presets", "Unload")
 
-client.set_event_callback("shutdown", function()
-	load_cvar:set_raw_float(globals_realtime())
-end)
+add_run_callback("MISC", "Settings", "Anti-untrusted", function(anti_ut_reference, remove_spread_reference, override_awp_reference, reduce_aim_step_reference)
+	local anti_ut = ui.get(anti_ut_reference)
 
-ui.set_visible(dump_mm_wins_reference, false)
+	ui.set_visible(remove_spread_reference, not anti_ut)
+	ui.set_visible(override_awp_reference, not anti_ut)
+	ui.set_visible(reduce_aim_step_reference, anti_ut)
+end, (ui.reference("RAGE", "Other", "Remove spread")), (ui.reference("RAGE", "Aimbot", "Override AWP")), (ui.reference("RAGE", "Aimbot", "Reduce aim step")))
