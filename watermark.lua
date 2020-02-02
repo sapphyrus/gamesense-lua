@@ -285,8 +285,8 @@ local watermark_items = {
 			local player_resource = entity_get_player_resource()
 			if player_resource == nil then return end
 
-			self.kills = entity_get_prop(player_resource, "m_iKills", local_player)
-			self.deaths = math.max(entity_get_prop(player_resource, "m_iDeaths", local_player), 1)
+			self.kills = entity_get_prop(player_resource, "m_iKills", frame_data.local_player)
+			self.deaths = math.max(entity_get_prop(player_resource, "m_iDeaths", frame_data.local_player), 1)
 
 			self.kdr = self.kills/self.deaths
 
