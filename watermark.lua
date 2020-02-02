@@ -31,40 +31,46 @@ local function vmt_bind(module, interface, index, typestring)
 	end
 end
 
+local allow_unsafe_scripts = pcall(client.create_interface)
+
 local FLOW_OUTGOING, FLOW_INCOMING = 0, 1
-local native_GetNetChannelInfo = vmt_bind("engine.dll", "VEngineClient014", 78, "void*(__thiscall*)(void*)")
-local native_GetName = vmt_thunk(0, "const char*(__thiscall*)(void*)")
-local native_GetAddress = vmt_thunk(1, "const char*(__thiscall*)(void*)")
-local native_IsLoopback = vmt_thunk(6, "bool(__thiscall*)(void*)")
-local native_IsTimingOut = vmt_thunk(7, "bool(__thiscall*)(void*)")
-local native_GetAvgLoss = vmt_thunk(11, "float(__thiscall*)(void*, int)")
-local native_GetAvgChoke = vmt_thunk(12, "float(__thiscall*)(void*, int)")
-local native_GetTimeSinceLastReceived = vmt_thunk(22, "float(__thiscall*)(void*)")
-local native_GetRemoteFramerate = vmt_thunk(25, "void(__thiscall*)(void*, float*, float*, float*)")
-local native_GetTimeoutSeconds = vmt_thunk(26, "float(__thiscall*)(void*)")
+local native_GetNetChannelInfo, GetRemoteFramerate, native_GetTimeSinceLastReceived, native_GetAvgChoke, native_GetAvgLoss, native_IsLoopback, GetAddress
 
-local pflFrameTime = ffi.new("float[1]")
-local pflFrameTimeStdDeviation = ffi.new("float[1]")
-local pflFrameStartTimeStdDeviation = ffi.new("float[1]")
+if allow_unsafe_scripts then
+	native_GetNetChannelInfo = vmt_bind("engine.dll", "VEngineClient014", 78, "void*(__thiscall*)(void*)")
+	local native_GetName = vmt_thunk(0, "const char*(__thiscall*)(void*)")
+	local native_GetAddress = vmt_thunk(1, "const char*(__thiscall*)(void*)")
+	native_IsLoopback = vmt_thunk(6, "bool(__thiscall*)(void*)")
+	local native_IsTimingOut = vmt_thunk(7, "bool(__thiscall*)(void*)")
+	native_GetAvgLoss = vmt_thunk(11, "float(__thiscall*)(void*, int)")
+	native_GetAvgChoke = vmt_thunk(12, "float(__thiscall*)(void*, int)")
+	native_GetTimeSinceLastReceived = vmt_thunk(22, "float(__thiscall*)(void*)")
+	local native_GetRemoteFramerate = vmt_thunk(25, "void(__thiscall*)(void*, float*, float*, float*)")
+	local native_GetTimeoutSeconds = vmt_thunk(26, "float(__thiscall*)(void*)")
 
-local function GetRemoteFramerate(netchannelinfo)
-	native_GetRemoteFramerate(netchannelinfo, pflFrameTime, pflFrameTimeStdDeviation, pflFrameStartTimeStdDeviation)
-	if pflFrameTime ~= nil and pflFrameTimeStdDeviation ~= nil and pflFrameStartTimeStdDeviation ~= nil then
-		return pflFrameTime[0], pflFrameTimeStdDeviation[0], pflFrameStartTimeStdDeviation[0]
+	local pflFrameTime = ffi.new("float[1]")
+	local pflFrameTimeStdDeviation = ffi.new("float[1]")
+	local pflFrameStartTimeStdDeviation = ffi.new("float[1]")
+
+	function GetRemoteFramerate(netchannelinfo)
+		native_GetRemoteFramerate(netchannelinfo, pflFrameTime, pflFrameTimeStdDeviation, pflFrameStartTimeStdDeviation)
+		if pflFrameTime ~= nil and pflFrameTimeStdDeviation ~= nil and pflFrameStartTimeStdDeviation ~= nil then
+			return pflFrameTime[0], pflFrameTimeStdDeviation[0], pflFrameStartTimeStdDeviation[0]
+		end
 	end
-end
 
-local function GetAddress(netchannelinfo)
-	local addr = native_GetAddress(netchannelinfo)
-	if addr ~= nil then
-		return ffi.string(addr)
+	function GetAddress(netchannelinfo)
+		local addr = native_GetAddress(netchannelinfo)
+		if addr ~= nil then
+			return ffi.string(addr)
+		end
 	end
-end
 
-local function GetName(netchannelinfo)
-	local name = native_GetName(netchannelinfo)
-	if name ~= nil then
-		return ffi.string(name)
+	local function GetName(netchannelinfo)
+		local name = native_GetName(netchannelinfo)
+		if name ~= nil then
+			return ffi.string(name)
+		end
 	end
 end
 
@@ -273,15 +279,11 @@ local watermark_items = {
 	{
 		name = "KDR",
 		get_width = function(self, frame_data)
-			local local_player = entity_get_local_player()
-			if local_player == nil then
-				return
-			end
+			frame_data.local_player = frame_data.local_player or entity.get_local_player()
+			if frame_data.local_player == nil then return end
 
 			local player_resource = entity_get_player_resource()
-			if player_resource == nil then
-				return
-			end
+			if player_resource == nil then return end
 
 			self.kills = entity_get_prop(player_resource, "m_iKills", local_player)
 			self.deaths = math.max(entity_get_prop(player_resource, "m_iDeaths", local_player), 1)
@@ -303,11 +305,10 @@ local watermark_items = {
 	{
 		name = "Velocity",
 		get_width = function(self, frame_data)
-			self.local_player = entity.get_local_player()
-			if self.local_player == nil then
-				return
-			end
-			local vel_x, vel_y = entity_get_prop(self.local_player, "m_vecVelocity")
+			frame_data.local_player = frame_data.local_player or entity.get_local_player()
+			if frame_data.local_player == nil then return end
+
+			local vel_x, vel_y = entity_get_prop(frame_data.local_player, "m_vecVelocity")
 			if vel_x ~= nil then
 				self.velocity = math_sqrt(vel_x*vel_x + vel_y*vel_y)
 
@@ -329,15 +330,13 @@ local watermark_items = {
 	{
 		name = "Server framerate",
 		get_width = function(self, frame_data)
-			self.local_player = entity.get_local_player()
-			if self.local_player == nil then
-				return
-			end
+			if not allow_unsafe_scripts then return end
+
+			frame_data.local_player = frame_data.local_player or entity.get_local_player()
+			if frame_data.local_player == nil then return end
 
 			frame_data.net_channel_info = frame_data.net_channel_info or native_GetNetChannelInfo()
-			if frame_data.net_channel_info == nil then
-				return
-			end
+			if frame_data.net_channel_info == nil then return end
 
 			local frame_time, frame_time_std_dev, frame_time_start_time_std_dev = GetRemoteFramerate(frame_data.net_channel_info)
 			if frame_time ~= nil then
@@ -370,15 +369,13 @@ local watermark_items = {
 	{
 		name = "Network lag",
 		get_width = function(self, frame_data)
-			self.local_player = entity.get_local_player()
-			if self.local_player == nil then
-				return
-			end
+			if not allow_unsafe_scripts then return end
+
+			frame_data.local_player = frame_data.local_player or entity.get_local_player()
+			if frame_data.local_player == nil then return end
 
 			frame_data.net_channel_info = frame_data.net_channel_info or native_GetNetChannelInfo()
-			if frame_data.net_channel_info == nil then
-				return
-			end
+			if frame_data.net_channel_info == nil then return end
 
 			local reasons = {}
 
@@ -412,15 +409,13 @@ local watermark_items = {
 	{
 		name = "Server info",
 		get_width = function(self, frame_data)
-			self.local_player = entity.get_local_player()
-			if self.local_player == nil then
-				return
-			end
+			if not allow_unsafe_scripts then return end
+
+			frame_data.local_player = frame_data.local_player or entity.get_local_player()
+			if frame_data.local_player == nil then return end
 
 			frame_data.net_channel_info = frame_data.net_channel_info or native_GetNetChannelInfo()
-			if frame_data.net_channel_info == nil then
-				return
-			end
+			if frame_data.net_channel_info == nil then return end
 			frame_data.is_loopback = frame_data.is_loopback == nil and native_IsLoopback(frame_data.net_channel_info) or frame_data.is_loopback
 
 			local game_rules = entity.get_game_rules()
@@ -480,20 +475,16 @@ local watermark_items = {
 	{
 		name = "Server IP",
 		get_width = function(self, frame_data)
+			if not allow_unsafe_scripts then return end
+
 			frame_data.net_channel_info = frame_data.net_channel_info or native_GetNetChannelInfo()
-			if frame_data.net_channel_info == nil then
-				return
-			end
+			if frame_data.net_channel_info == nil then return end
 
 			frame_data.is_loopback = frame_data.is_loopback == nil and native_IsLoopback(frame_data.net_channel_info) or frame_data.is_loopback
-			if frame_data.is_loopback then
-				return
-			end
+			if frame_data.is_loopback then return end
 
 			frame_data.is_valve_ds = frame_data.is_valve_ds == nil and entity.get_prop(entity.get_game_rules(), "m_bIsValveDS") == 1 or frame_data.is_valve_ds
-			if frame_data.is_valve_ds then
-				return
-			end
+			if frame_data.is_valve_ds then return end
 
 			frame_data.server_address = frame_data.server_address or GetAddress(frame_data.net_channel_info)
 			if frame_data.server_address ~= nil and frame_data.server_address ~= "" then
@@ -508,9 +499,7 @@ local watermark_items = {
 	{
 		name = "Tickrate",
 		get_width = function(self, frame_data)
-			if globals.mapname() == nil then
-				return
-			end
+			if globals.mapname() == nil then return end
 
 			local tickinterval = globals_tickinterval()
 			if tickinterval ~= nil then
