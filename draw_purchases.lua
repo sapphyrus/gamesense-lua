@@ -10,6 +10,7 @@ local string_find, string_format, string_gsub, string_len, string_gmatch, string
 local ipairs, assert, pairs, next, tostring, tonumber, setmetatable, unpack, type, getmetatable, pcall, error = ipairs, assert, pairs, next, tostring, tonumber, setmetatable, unpack, type, getmetatable, pcall, error
 --end of local variables
 
+local images = require "gamesense/images"
 local bit_band = bit.band
 local idx_to_console_name, weapon_types = {[1]="weapon_deagle",[2]="weapon_elite",[3]="weapon_fiveseven",[4]="weapon_glock",[7]="weapon_ak47",[8]="weapon_aug",[9]="weapon_awp",[10]="weapon_famas",[11]="weapon_g3sg1",[13]="weapon_galilar",[14]="weapon_m249",[16]="weapon_m4a1",[17]="weapon_mac10",[19]="weapon_p90",[23]="weapon_mp5sd",[24]="weapon_ump45",[25]="weapon_xm1014",[26]="weapon_bizon",[27]="weapon_mag7",[28]="weapon_negev",[29]="weapon_sawedoff",[30]="weapon_tec9",[31]="weapon_taser",[32]="weapon_hkp2000",[33]="weapon_mp7",[34]="weapon_mp9",[35]="weapon_nova",[36]="weapon_p250",[38]="weapon_scar20",[39]="weapon_sg556",[40]="weapon_ssg08",[41]="weapon_knifegg",[42]="weapon_knife",[43]="weapon_flashbang",[44]="weapon_hegrenade",[45]="weapon_smokegrenade",[46]="weapon_molotov",[47]="weapon_decoy",[48]="weapon_incgrenade",[49]="weapon_c4",[50]="item_kevlar",[51]="item_assaultsuit",[52]="item_heavyassaultsuit",[55]="item_defuser",[56]="item_cutters",[57]="weapon_healthshot",[59]="weapon_knife_t",[60]="weapon_m4a1_silencer",[61]="weapon_usp_silencer",[63]="weapon_cz75a",[64]="weapon_revolver",[68]="weapon_tagrenade",[69]="weapon_fists",[70]="weapon_breachcharge",[72]="weapon_tablet",[74]="weapon_melee",[75]="weapon_axe",[76]="weapon_hammer",[78]="weapon_spanner",[80]="weapon_knife_ghost",[81]="weapon_firebomb",[82]="weapon_diversion",[83]="weapon_frag_grenade",[84]="weapon_snowball",[500]="weapon_bayonet",[505]="weapon_knife_flip",[506]="weapon_knife_gut",[507]="weapon_knife_karambit",[508]="weapon_knife_m9_bayonet",[509]="weapon_knife_tactical",[512]="weapon_knife_falchion",[514]="weapon_knife_survival_bowie",[515]="weapon_knife_butterfly",[516]="weapon_knife_push",[519]="weapon_knife_ursus",[520]="weapon_knife_gypsy_jackknife",[522]="weapon_knife_stiletto",[523]="weapon_knife_widowmaker"}, {["secondary"]={1,2,3,4,30,32,36,61,63,64},["rifle"]={7,8,9,10,11,13,16,38,39,40,60},["heavy"]={14,25,27,28,29,35},["smg"]={17,19,23,24,26,33,34},["equipment"]={31,50,51,52,55,56},["melee"]={41,42,59,69,74,75,76,78,80,500,505,506,507,508,509,512,514,515,516,519,520,522,523},["grenade"]={43,44,45,46,47,48,68,81,82,83,84},["c4"]={49,70},["boost"]={57},["utility"]={72}}
 local weapon_types_lookup, console_name_to_idx = setmetatable({}, {__index=function(tbl, idx) return type(idx) == "number" and rawget(tbl, bit_band(idx, 0xFFFF)) or nil end}), {}
@@ -60,9 +61,6 @@ end
 local enabled_reference = ui.new_checkbox("VISUALS", "Other ESP", "Draw purchases")
 local color_reference = ui.new_color_picker("VISUALS", "Other ESP", "Draw purchases color", 230, 230, 230, 255)
 
-local images_lib = require "images"
-local images_icons
-
 local player_name_flags = nil
 local icon_height = 13
 local padding = 4
@@ -76,11 +74,6 @@ local function on_paint()
 	end
 	local r, g, b, a = ui_get(color_reference)
 
-	--delay loading, only load icons if script is enabled
-	if images_icons == nil then
-		images_icons = images_lib.load(require("imagepack_icons"))
-	end
-
 	local width_max = 90
 	local names, width_name = {}, {}
 	local i = 1
@@ -91,7 +84,7 @@ local function on_paint()
 
 		for i=1, #purchases_player do
 			if purchases_player[i] ~= "kevlar" or not table_contains(purchases_player, "assaultsuit") then
-				local icon = images_icons[({purchases_player[i]:gsub("weapon_", ""):gsub("item_", "")})[1]]
+				local icon = images.get_weapon_icon(purchases_player[i])
 				if icon ~= nil then
 					width = width + icon:measure(nil, icon_height) + padding
 				--else
@@ -144,7 +137,7 @@ local function on_paint()
 				local weapon_type = weapon_types_lookup[purchases_player[i]]
 				if weapon_type == type_current then
 					if purchases_player[i] ~= "item_kevlar" or not table_contains(purchases_player, "item_assaultsuit") then
-						local icon = images_icons[({purchases_player[i]:gsub("weapon_", ""):gsub("item_", "")})[1]]
+						local icon = images.get_weapon_icon(purchases_player[i])
 						if icon ~= nil then
 							local opacity_multiplier = type_opacities[weapon_type] or 1
 							local width = icon:draw(x+x_offset, y+y_offset, nil, icon_height, r, g, b, a*opacity_multiplier)
